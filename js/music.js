@@ -5,9 +5,9 @@
    ========================================================= */
 
 const music = (() => {
-  let ctx = null, master = null, filter = null;
+  let ctx = null, master = null, filter = null, limiter = null;
   let timer = null, step = 0, nextTime = 0;
-  let theme = null, targetGain = 0.16, muted = false;
+  let theme = null, targetGain = 0.62, muted = false;
 
   const LOOKAHEAD = 25;      // ms entre deux réveils du planificateur
   const HORIZON  = 0.12;     // s d'avance sur l'horloge audio
@@ -81,15 +81,15 @@ const music = (() => {
     const root = chord[0];
 
     // BASSE — fondamentale sur les temps 1 et 3, quinte sur le 4
-    if (s16 === 0)  tone(midi(root - 12), at, 0.42, "triangle", 0.16);
-    if (s16 === 8)  tone(midi(root - 12), at, 0.30, "triangle", 0.12);
-    if (s16 === 14) tone(midi(chord[2] - 12), at, 0.16, "triangle", 0.09);
+    if (s16 === 0)  tone(midi(root - 12), at, 0.42, "triangle", 0.40);
+    if (s16 === 8)  tone(midi(root - 12), at, 0.30, "triangle", 0.30);
+    if (s16 === 14) tone(midi(chord[2] - 12), at, 0.16, "triangle", 0.22);
 
     // ARPÈGE — croches continues à travers l'accord
     if (s16 % 2 === 0) {
       const n = chord[(s16 / 2) % chord.length];
-      tone(midi(n), at, 0.13, "square", 0.045);
-      tone(midi(n), at, 0.13, "square", 0.028, 7);   // léger désaccord = épaisseur
+      tone(midi(n), at, 0.13, "square", 0.115);
+      tone(midi(n), at, 0.13, "square", 0.070, 7);   // léger désaccord = épaisseur
     }
 
     // MÉLODIE — clairsemée, pseudo-aléatoire mais déterministe (même boucle à chaque fois)
@@ -97,12 +97,12 @@ const music = (() => {
     const r = (seed / 2147483647);
     if (r < t.lead * 0.34 && s16 % 2 === 0) {
       const n = t.scale[Math.floor(r * 997) % t.scale.length];
-      tone(midi(n), at, 0.34, "square", 0.055);
+      tone(midi(n), at, 0.34, "square", 0.140);
     }
 
     // PERCUSSION — pulsation discrète
-    if (t.perc > 0.25 && s16 % 8 === 0) noise(at, 0.05, 0.05 * t.perc, 1200);
-    if (t.perc > 0.45 && s16 % 8 === 4) noise(at, 0.09, 0.035 * t.perc, 4000);
+    if (t.perc > 0.25 && s16 % 8 === 0) noise(at, 0.05, 0.13 * t.perc, 1200);
+    if (t.perc > 0.45 && s16 % 8 === 4) noise(at, 0.09, 0.090 * t.perc, 4000);
   }
 
   function tick() {
@@ -124,7 +124,15 @@ const music = (() => {
       master = ctx.createGain(); master.gain.value = 0;
       filter = ctx.createBiquadFilter();
       filter.type = "lowpass"; filter.frequency.value = 2400; filter.Q.value = 0.6;
-      filter.connect(master).connect(ctx.destination);
+      // limiteur : le chiptune a des transitoires brutales, sans lui il faudrait
+      // baisser le niveau global pour éviter la saturation — donc tout serait trop bas
+      limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -14;
+      limiter.knee.value = 10;
+      limiter.ratio.value = 8;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.22;
+      filter.connect(master).connect(limiter).connect(ctx.destination);
     },
 
     /* démarre ou change de thème, avec fondu */
@@ -158,5 +166,14 @@ const music = (() => {
     get muted() { return muted; },
     get ready() { return !!ctx; },
     get context() { return ctx; },
+
+    /* branche un analyseur sur la sortie — sert à mesurer le niveau en test */
+    tap() {
+      if (!ctx) return null;
+      const an = ctx.createAnalyser();
+      an.fftSize = 2048;
+      limiter.connect(an);         // après le limiteur : c'est ce qu'on entend vraiment
+      return an;
+    },
   };
 })();

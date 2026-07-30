@@ -19,7 +19,7 @@ const state = { node: null, lieu: null, menu: null, front: "a", busy: false };
 let actx = null;
 const audio = {
   wake() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); },
-  blip(freq = 620, dur = 0.035, type = "square", gain = 0.045) {
+  blip(freq = 620, dur = 0.035, type = "square", gain = 0.22) {
     if (!actx || actx.state !== "running") return;
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = type; o.frequency.value = freq;
@@ -28,8 +28,8 @@ const audio = {
     o.connect(g).connect(actx.destination);
     o.start(); o.stop(actx.currentTime + dur);
   },
-  select() { this.blip(880, 0.05); setTimeout(() => this.blip(1180, 0.07), 55); },
-  confirm() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.blip(f, 0.13, "square", 0.05), i * 90)); },
+  select() { this.blip(880, 0.05, "square", 0.26); setTimeout(() => this.blip(1180, 0.07, "square", 0.26), 55); },
+  confirm() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.blip(f, 0.13, "square", 0.24), i * 90)); },
   // la montre : balayage ascendant puis coupure nette
   warp() {
     if (!actx || actx.state !== "running") return;
@@ -37,7 +37,7 @@ const audio = {
     o.type = "triangle";
     o.frequency.setValueAtTime(220, t);
     o.frequency.exponentialRampToValueAtTime(2400, t + 0.42);
-    g.gain.setValueAtTime(0.05, t);
+    g.gain.setValueAtTime(0.24, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
     o.connect(g).connect(actx.destination);
     o.start(); o.stop(t + 0.5);
@@ -132,7 +132,7 @@ function typeText(str) {
       if (done) return;
       if (i >= str.length) return finish();
       el.text.textContent += str[i];
-      if (str[i] !== " " && i % 3 === 0) audio.blip(560 + (i % 5) * 22, 0.022, "square", 0.026);
+      if (str[i] !== " " && i % 3 === 0) audio.blip(560 + (i % 5) * 22, 0.022, "square", 0.13);
       i++;
       typing = setTimeout(tick, 26);
     };
