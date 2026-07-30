@@ -341,7 +341,9 @@ html, body {
   gap: calc(var(--px) * 3);
   padding: calc(var(--px) * 6);
   text-align: center;
-  background: rgba(11, 8, 16, .72);
+  /* assez sombre pour concentrer le regard sur le ticket, assez clair pour
+     qu'elle voie encore le lieu qu'elle vient de choisir                    */
+  background: rgba(11, 8, 16, .42);
 }
 #outro.show { display: flex; }
 
