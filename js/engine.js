@@ -255,12 +255,27 @@ const WARP_TINT = {
   beach:  ["#dff2ff", "#63c3ff"],
 };
 
+/* cale la montre sur le poignet d'Evan, quelle que soit la taille d'écran */
+function placeWatch() {
+  const him = $("#him"), world = $("#world");
+  if (!him || el.cast.style.display === "none") return false;
+  const h = him.getBoundingClientRect(), w = world.getBoundingClientRect();
+  if (!h.width) return false;
+  el.watch.style.left   = (h.left - w.left + h.width * 0.06) + "px";
+  el.watch.style.bottom = (w.bottom - h.bottom + h.height * 0.30) + "px";
+  el.watch.style.marginLeft = "0";
+  el.ring.style.left = (h.left - w.left + h.width * 0.06) + "px";
+  el.ring.style.top  = (h.top - w.top + h.height * 0.70) + "px";
+  return true;
+}
+
 async function teleport(swap, dest) {
   const [flash, ring] = WARP_TINT[dest] ?? WARP_TINT.street;
   el.flash.style.background = flash;
   el.ring.style.borderColor = ring;
   music.duck(true);
-  el.watch.classList.add("show");            // Evan sort la montre
+  const hasWatch = placeWatch();
+  if (hasWatch) el.watch.classList.add("show");   // Evan sort la montre
   await wait(420);
   audio.warp();
   el.watch.classList.add("ping");            // il appuie dessus
