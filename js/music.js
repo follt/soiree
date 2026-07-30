@@ -1,110 +1,171 @@
 /* =========================================================
-   MUSIQUE — nappe douce, synthétisée à la volée
-   Pas de chiptune : ondes triangle, accords tenus, quelques notes
-   égrenées dans un écho. Un thème par monde, fondu au changement.
-   Aucun fichier audio.
+   MUSIQUE — thèmes composés, façon RPG portable
+   Vraies mélodies écrites à la main (pas de notes tirées au sort) :
+   une ligne chantable, une basse qui marche, une batterie simple.
+   Tout est synthétisé, aucun fichier audio.
+   -----------------------------------------------------------
+   Pour modifier un thème : les mélodies sont des listes
+   [note MIDI, durée en doubles-croches]. null = silence.
+   16 doubles-croches par mesure, 4 mesures par boucle = 64.
+   60 = do central. +12 = une octave au-dessus.
    ========================================================= */
 
 const music = (() => {
-  let ctx = null, master = null, filter = null, limiter = null;
-  let delay = null, delayGain = null, wet = null;
+  let ctx = null, master = null, limiter = null;
   let timer = null, step = 0, nextTime = 0;
-  let theme = null, targetGain = 1.05, muted = false;
+  let theme = null, targetGain = 0.85, muted = false;
 
   const LOOKAHEAD = 25;
-  const HORIZON   = 0.20;
-
+  const HORIZON   = 0.16;
   const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
 
-  /* ---------- THÈMES ----------
-     Lent, peu de notes. chords = 4 accords tenus, un par mesure.  */
+  /* déplie [[note,durée],…] en 64 cases : note au départ, -1 = tenue */
+  function roll(pairs) {
+    const out = [];
+    for (const [n, len] of pairs) {
+      out.push(n === null ? null : n);
+      for (let i = 1; i < len; i++) out.push(n === null ? null : -1);
+    }
+    while (out.length < 64) out.push(null);
+    return out.slice(0, 64);
+  }
+
   const THEMES = {
-    street: {                                  // ruelle du soir, doux
-      bpm: 68, chords: [[57,60,64,67],[53,57,60,64],[48,52,55,59],[55,59,62,66]],
-      scale: [72,74,76,79,81], cutoff: 1700, air: .5,
+    /* ---- LA RUELLE : thème de ville, chaleureux, do majeur ---- */
+    street: {
+      bpm: 124, drums: 0.8,
+      chords: [[48,52,55],[45,52,57],[41,48,53],[43,50,55]],
+      mel: roll([[76,2],[74,2],[72,4],[null,2],[67,2],[72,4],
+                 [74,2],[76,2],[77,4],[76,4],[74,4],
+                 [72,2],[71,2],[69,4],[null,2],[67,2],[71,4],
+                 [72,4],[74,4],[76,8]]),
     },
-    resto: {                                   // bistro, feutré
-      bpm: 60, chords: [[50,53,57,60],[55,59,62,65],[48,52,55,59],[45,48,52,55]],
-      scale: [69,72,74,77,79], cutoff: 1300, air: .35,
+
+    /* ---- LE PARC : plus vif, lumineux, fa majeur ---- */
+    park: {
+      bpm: 138, drums: 1,
+      chords: [[41,48,53],[48,52,55],[45,52,57],[43,50,55]],
+      mel: roll([[77,2],[79,2],[81,4],[79,2],[77,2],[76,4],
+                 [79,2],[81,2],[83,4],[84,6],[null,2],
+                 [81,2],[79,2],[77,4],[76,2],[74,2],[72,4],
+                 [74,4],[77,4],[81,8]]),
     },
-    park: {                                    // heure dorée, ouvert
-      bpm: 74, chords: [[48,52,55,59],[55,59,62,66],[57,60,64,67],[53,57,60,64]],
-      scale: [72,76,79,81,84], cutoff: 2100, air: .6,
+
+    /* ---- LA FORÊT : mineur, plus mystérieux mais toujours mélodique ---- */
+    forest: {
+      bpm: 112, drums: 0.45,
+      chords: [[45,52,57],[43,50,55],[41,48,53],[40,47,52]],
+      mel: roll([[69,4],[72,2],[74,2],[76,4],[74,4],
+                 [72,4],[71,2],[69,2],[67,8],
+                 [69,2],[71,2],[72,4],[74,4],[76,4],
+                 [77,4],[76,4],[74,8]]),
     },
-    forest: {                                  // clairière, suspendu
-      bpm: 56, chords: [[52,55,59,62],[48,52,55,59],[50,53,57,60],[47,50,54,57]],
-      scale: [71,74,78,81,83], cutoff: 1150, air: .7,
+
+    /* ---- LA PLAGE : ample, nostalgique, sol majeur ---- */
+    beach: {
+      bpm: 118, drums: 0.6,
+      chords: [[43,50,55],[48,52,55],[45,52,57],[41,48,53]],
+      mel: roll([[74,4],[79,4],[78,2],[76,2],[74,4],
+                 [72,4],[74,4],[76,8]],
+                ).concat(roll([[71,4],[74,4],[76,2],[74,2],[72,4],
+                               [69,6],[null,2],[67,8]])).slice(0, 64),
     },
-    beach: {                                   // large, nostalgique
-      bpm: 64, chords: [[53,57,60,64],[48,52,55,59],[55,59,62,66],[50,53,57,60]],
-      scale: [69,72,76,79,84], cutoff: 1900, air: .65,
+
+    /* ---- LE BISTRO : lent, feutré, ré mineur ---- */
+    resto: {
+      bpm: 100, drums: 0.3,
+      chords: [[38,45,50],[43,50,55],[36,43,48],[41,48,53]],
+      mel: roll([[74,4],[77,4],[81,6],[null,2],
+                 [79,4],[77,4],[74,8],
+                 [72,4],[74,4],[77,6],[null,2],
+                 [76,4],[74,4],[69,8]]),
     },
   };
 
   /* ---------- VOIX ---------- */
 
-  // accord tenu : attaque lente, longue extinction — c'est le lit sonore
-  function pad(notes, at, dur, gain) {
-    for (const n of notes) {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = "triangle";
-      o.frequency.value = midi(n);
-      o.detune.value = (Math.floor(n * 7919) % 9) - 4;   // micro-désaccord fixe
-      g.gain.setValueAtTime(0.0001, at);
-      g.gain.exponentialRampToValueAtTime(gain, at + dur * 0.35);
-      g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-      o.connect(g).connect(filter);
-      o.start(at); o.stop(at + dur + 0.05);
-    }
+  // onde pulsée fine : le timbre caractéristique des consoles portables
+  let pulseWave = null;
+  function getPulse() {
+    if (pulseWave) return pulseWave;
+    const n = 24, real = new Float32Array(n), imag = new Float32Array(n);
+    for (let i = 1; i < n; i++) imag[i] = Math.sin(i * Math.PI * 0.25) / (i * 0.9); // ~25 %
+    pulseWave = ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+    return pulseWave;
   }
 
-  // note égrenée : courte, ronde, envoyée dans l'écho
-  function pluck(n, at, dur, gain) {
+  function voice(n, at, dur, gain, kind) {
     const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = "sine";
+    if (kind === "pulse") o.setPeriodicWave(getPulse());
+    else o.type = kind;
     o.frequency.value = midi(n);
     g.gain.setValueAtTime(0.0001, at);
-    g.gain.exponentialRampToValueAtTime(gain, at + 0.02);
+    g.gain.linearRampToValueAtTime(gain, at + 0.012);
+    g.gain.setValueAtTime(gain, at + dur * 0.7);
     g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    o.connect(g);
-    g.connect(filter);
-    g.connect(delay);                 // c'est l'écho qui donne l'espace
-    o.start(at); o.stop(at + dur + 0.05);
+    o.connect(g).connect(master);
+    o.start(at); o.stop(at + dur + 0.02);
   }
 
-  /* ---------- SÉQUENCEUR ----------
-     8 pas par mesure, 4 mesures = 32 pas. Très peu d'évènements.  */
+  let noiseBuf = null;
+  function drum(at, dur, gain, hp) {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    const g = ctx.createGain(), f = ctx.createBiquadFilter();
+    f.type = "highpass"; f.frequency.value = hp;
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    s.connect(f).connect(g).connect(master);
+    s.start(at); s.stop(at + dur);
+  }
+
+  /* ---------- SÉQUENCEUR ---------- */
 
   function schedule(i, at) {
     const t = theme;
-    const bar = Math.floor(i / 8) % 4;
-    const s = i % 8;
+    const bar = Math.floor(i / 16) % 4;
+    const s = i % 16;
     const chord = t.chords[bar];
-    const beat = 60 / t.bpm;
+    const sixteenth = 60 / t.bpm / 4;
 
-    // nappe : une seule fois par mesure, tenue sur toute la mesure
-    if (s === 0) pad(chord, at, beat * 4 * 0.95, 0.052);
+    /* MÉLODIE — on ne déclenche que sur une attaque, on laisse tenir sinon */
+    const m = t.mel[i];
+    if (m !== null && m !== -1) {
+      let len = 1;
+      while (t.mel[(i + len) % 64] === -1 && len < 16) len++;
+      voice(m, at, sixteenth * len * 0.92, 0.115, "pulse");
+      voice(m - 12, at, sixteenth * len * 0.9, 0.030, "pulse");   // doublure grave
+    }
 
-    // basse douce sur le premier temps
-    if (s === 0) pluck(chord[0] - 24, at, beat * 1.6, 0.20);
+    /* BASSE — croches qui marchent : fondamentale, quinte, fondamentale, octave */
+    if (s % 2 === 0) {
+      const walk = [chord[0], chord[0], chord[1], chord[0],
+                    chord[2], chord[0], chord[1], chord[0]][(s / 2) % 8];
+      voice(walk - 12, at, sixteenth * 1.7, 0.20, "triangle");
+    }
 
-    // deux notes égrenées par mesure, prises dans l'accord
-    if (s === 3) pluck(chord[2], at, beat * 1.1, 0.085);
-    if (s === 6) pluck(chord[1], at, beat * 0.9, 0.065);
+    /* HARMONIE — accord bref sur les contretemps */
+    if (s === 4 || s === 12) {
+      for (const n of chord) voice(n + 12, at, sixteenth * 1.4, 0.028, "square");
+    }
 
-    // mélodie : rare, déterministe — la même boucle à chaque tour
-    const r = ((i * 2654435761) % 2147483647) / 2147483647;
-    if (r < t.air * 0.22 && s % 2 === 1) {
-      pluck(t.scale[Math.floor(r * 997) % t.scale.length], at, beat * 1.4, 0.10);
+    /* BATTERIE */
+    if (t.drums > 0) {
+      if (s % 2 === 0) drum(at, 0.028, 0.045 * t.drums, 7000);      // charleston
+      if (s === 4 || s === 12) drum(at, 0.10, 0.16 * t.drums, 1400); // caisse claire
     }
   }
 
   function tick() {
     if (!theme) return;
-    const spb = 60 / theme.bpm / 2;          // un pas = une croche
+    const spb = 60 / theme.bpm / 4;
     while (nextTime < ctx.currentTime + HORIZON) {
       schedule(step, nextTime);
-      step = (step + 1) % 32;
+      step = (step + 1) % 64;
       nextTime += spb;
     }
   }
@@ -115,28 +176,14 @@ const music = (() => {
     init() {
       if (ctx) return;
       ctx = new (window.AudioContext || window.webkitAudioContext)();
-
       master = ctx.createGain(); master.gain.value = 0;
-
-      filter = ctx.createBiquadFilter();
-      filter.type = "lowpass"; filter.frequency.value = 1600; filter.Q.value = 0.4;
-
-      // écho : c'est lui qui remplace la densité de notes par de l'espace
-      delay = ctx.createDelay(1.5);
-      delay.delayTime.value = 0.42;
-      delayGain = ctx.createGain(); delayGain.gain.value = 0.34;   // réinjection
-      wet = ctx.createGain();       wet.gain.value = 0.42;
-      delay.connect(delayGain).connect(delay);
-      delay.connect(wet).connect(filter);
-
       limiter = ctx.createDynamicsCompressor();
       limiter.threshold.value = -10;
-      limiter.knee.value = 10;
-      limiter.ratio.value = 8;
+      limiter.knee.value = 8;
+      limiter.ratio.value = 6;
       limiter.attack.value = 0.004;
-      limiter.release.value = 0.30;
-
-      filter.connect(master).connect(limiter).connect(ctx.destination);
+      limiter.release.value = 0.25;
+      master.connect(limiter).connect(ctx.destination);
     },
 
     play(name) {
@@ -145,23 +192,23 @@ const music = (() => {
       if (!t || theme === t) return;
       const fresh = !theme;
       theme = t;
-      filter.frequency.setTargetAtTime(t.cutoff, ctx.currentTime, 0.6);
-      delay.delayTime.setTargetAtTime(60 / t.bpm * 0.75, ctx.currentTime, 0.4);
       if (fresh) {
         step = 0; nextTime = ctx.currentTime + 0.1;
         timer = setInterval(tick, LOOKAHEAD);
+      } else {
+        step = 0;                       // on repart au début du thème
       }
-      if (!muted) master.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.9);
+      if (!muted) master.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.6);
     },
 
     duck(on) {
       if (!ctx || muted) return;
-      master.gain.setTargetAtTime(on ? targetGain * 0.22 : targetGain, ctx.currentTime, 0.18);
+      master.gain.setTargetAtTime(on ? targetGain * 0.2 : targetGain, ctx.currentTime, 0.15);
     },
 
     toggle() {
       muted = !muted;
-      if (ctx) master.gain.setTargetAtTime(muted ? 0 : targetGain, ctx.currentTime, 0.25);
+      if (ctx) master.gain.setTargetAtTime(muted ? 0 : targetGain, ctx.currentTime, 0.2);
       return !muted;
     },
 
@@ -169,7 +216,6 @@ const music = (() => {
     get ready() { return !!ctx; },
     get context() { return ctx; },
 
-    /* analyseur en sortie — sert à mesurer le niveau réel en test */
     tap() {
       if (!ctx) return null;
       const an = ctx.createAnalyser();

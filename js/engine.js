@@ -242,7 +242,7 @@ async function speak(who, text) {
   el.portrait.onload  = () => el.portrait.classList.add("show");
   if (el.portrait.getAttribute("src") !== c.portrait) el.portrait.src = c.portrait;
   el.dialog.classList.add("show");
-  await typeText(text.replace(/@(lieu|menu|apres)\b/g, (_, k) => state[k] ?? ""));
+  await typeText(text.replace(/@(lieu|menu|apres|date)\b/g, (_, k) => state[k] ?? ""));
 }
 
 /* Evan sort la montre : onde, flash, changement de monde */
@@ -356,6 +356,7 @@ function showTicket(node) {
   $("#o-title").textContent = resolve(node.title) ?? "";
   $("#o-sub").textContent   = resolve(node.sub) ?? "";
   $("#o-note").textContent  = resolve(node.note) ?? "";
+  $("#o-date").textContent  = resolve(node.date) ?? "";
   $("#sig").textContent     = OUTRO.signature;
   $("#ics").textContent     = OUTRO.cta;
   $("#replay").textContent  = OUTRO.replay;
@@ -369,28 +370,37 @@ function finish(node) {
   showTicket(node);
   try {
     localStorage.setItem("soiree", JSON.stringify({
-      node: state.node, lieu: state.lieu, menu: state.menu,
-      apres: state.apres, at: Date.now(),
+      node: state.node, lieu: state.lieu, menu: state.menu, apres: state.apres,
+      date: state.date, dateIso: state.dateIso, dateHeure: state.dateHeure, at: Date.now(),
     }));
   } catch (e) {}
 }
 
 /* ---------- compte à rebours jusqu'au rendez-vous ---------- */
-function nextDateAt(hour = 19, minute = 40) {
+function rendezVous() {
+  // la date qu'elle a choisie ; repli sur le prochain créneau si absente
+  const [h, m] = (state.dateHeure ?? "19:40").split(":").map(Number);
+  if (state.dateIso) {
+    const [y, mo, da] = state.dateIso.split("-").map(Number);
+    return new Date(y, mo - 1, da, h, m, 0, 0);
+  }
   const d = new Date();
-  d.setHours(hour, minute, 0, 0);
+  d.setHours(h, m, 0, 0);
   if (d.getTime() < Date.now()) d.setDate(d.getDate() + 1);
   return d;
 }
 let cdTimer = null;
 function startCountdown() {
-  const target = nextDateAt();
+  const target = rendezVous();
   const box = $("#countdown");
   const tick = () => {
     const ms = target - Date.now();
     if (ms <= 0) { box.textContent = "C'est ce soir."; clearInterval(cdTimer); return; }
-    const h = Math.floor(ms / 3.6e6), m = Math.floor(ms % 3.6e6 / 6e4);
-    box.textContent = `dans ${h} h ${String(m).padStart(2, "0")}`;
+    const j = Math.floor(ms / 8.64e7);
+    const h = Math.floor(ms % 8.64e7 / 3.6e6), m = Math.floor(ms % 3.6e6 / 6e4);
+    box.textContent = j > 0
+      ? `dans ${j} jour${j > 1 ? "s" : ""} et ${h} h`
+      : `dans ${h} h ${String(m).padStart(2, "0")}`;
   };
   tick();
   clearInterval(cdTimer);
@@ -399,7 +409,7 @@ function startCountdown() {
 
 /* ---------- fichier calendrier, généré côté client ---------- */
 function downloadIcs() {
-  const start = nextDateAt();
+  const start = rendezVous();
   const end = new Date(start.getTime() + 2.5 * 3.6e6);
   const fmt = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const title = `${resolve(STORY.fin.title)} — ${HIM} & ${HER}`;
@@ -452,7 +462,8 @@ function start() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem("soiree") || "null"); } catch (_) {}
   if (saved?.lieu) {
-    Object.assign(state, { lieu: saved.lieu, menu: saved.menu, apres: saved.apres });
+    Object.assign(state, { lieu: saved.lieu, menu: saved.menu, apres: saved.apres,
+      date: saved.date, dateIso: saved.dateIso, dateHeure: saved.dateHeure });
     currentBg = null;
     paintBg(LIEUX[saved.lieu]?.bg ?? "street").then(() => {
       setWeather(LIEUX[saved.lieu]?.weather ?? "fireflies");
