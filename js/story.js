@@ -1,18 +1,9 @@
 /* ---------------------------------------------------------------
    HISTOIRE + ARBRE DE CHOIX
-   Tout le texte vit ici. engine.js n'a jamais besoin d'être touché.
+   Ton : simple et direct. Phrases courtes. Aucune mise en scène.
    -----------------------------------------------------------------
    Réplique : ["evan" | "lauryne", "texte"]
    Choix    : { label, say, goto, set }
-       label → texte du bouton
-       say   → ce que Lauryne répond après le clic
-       set   → mémorise le choix (lieu, menu, apres…)
-   Noeud    :
-       bg        décor            weather  particules
-       cast      false | {bottom, width}
-       teleport  true → Evan sort la montre et les téléporte
-       end       true → écran de ticket
-   Jetons @lieu @menu @apres remplacés à l'affichage.
 --------------------------------------------------------------- */
 
 const HER = "Lauryne";
@@ -24,63 +15,55 @@ const STORY = {
   start: {
     bg: "street", weather: "fireflies",
     lines: [
-      ["evan", `Ne pose pas de questions tout de suite.`],
-      ["evan", `J'ai trouvé une montre. Elle ne donne pas l'heure.`],
-      ["evan", `Elle nous emmène là où tu veux passer la soirée.`],
-      ["evan", `Une seule règle : c'est toi qui choisis. Moi je suis.`],
+      ["evan", `Salut toi.`],
+      ["evan", `J'ai une petite surprise pour ce soir.`],
+      ["evan", `Mais j'ai deux ou trois questions à te poser avant.`],
+      ["evan", `Ça te dit ?`],
     ],
     choices: [
-      { label: "Une montre.", say: `Une montre.`, goto: "carrefour" },
-      { label: "Prouve-le.",  say: `Prouve-le.`,  goto: "carrefour" },
+      { label: "Oui", say: `Oui.`, goto: "carrefour" },
+      { label: "Oui", say: `Oui.`, goto: "carrefour" },
     ],
   },
 
   carrefour: {
     bg: "street", weather: "fireflies",
     lines: [
-      ["evan", `Deux directions. Aucune mauvaise réponse.`],
-      ["evan", `Dans l'une je dois réserver une table. Dans l'autre je dois cuisiner.`],
-      ["evan", `Choisis en connaissance de cause.`],
+      ["evan", `Voilà, c'était bien parti.`],
+      ["evan", `Tu préfères qu'on aille où ?`],
     ],
     choices: [
-      { label: "Un restaurant",
-        say: `Un restaurant. Nappe, couverts, tout.`, goto: "resto_choix" },
-      { label: "Un pique-nique",
-        say: `Un pique-nique. Je veux te voir cuisiner.`, goto: "picnic_lieu" },
+      { label: "Au restaurant", say: `Au restaurant.`,   goto: "resto_choix" },
+      { label: "En pique-nique", say: `En pique-nique.`, goto: "picnic_lieu" },
     ],
   },
 
-  /* ================= BRANCHE RESTAURANT ================= */
+  /* ================= RESTAURANT ================= */
   resto_choix: {
     bg: "resto", weather: "warmdust", cast: false, teleport: true,
     lines: [
-      ["evan", `Voilà. Une table, deux couverts, une bougie qui tiendra jusqu'au dessert.`],
-      ["evan", `Deux adresses. Je peux avoir de la place dans les deux.`],
+      ["evan", `Ok. J'ai deux adresses en tête.`],
+      ["evan", `Laquelle te tente ?`],
     ],
     choices: [
-      { label: "Au Comptoir Vénitien",
-        say: `Le Comptoir Vénitien.`,
+      { label: "Au Comptoir Vénitien", say: `Le Comptoir Vénitien.`,
         goto: "apres", set: { lieu: "Au Comptoir Vénitien", menu: "Une table pour deux" } },
-      { label: "BEY BEEF",
-        say: `BEY BEEF. J'ai faim, autant assumer.`,
+      { label: "BEY BEEF", say: `BEY BEEF.`,
         goto: "apres", set: { lieu: "BEY BEEF", menu: "Une table pour deux" } },
     ],
   },
 
-  /* ================= BRANCHE PIQUE-NIQUE ================= */
+  /* ================= PIQUE-NIQUE ================= */
   picnic_lieu: {
     bg: "street", weather: "fireflies",
     lines: [
-      ["evan", `Un panier, une couverture, et personne autour.`],
-      ["evan", `La montre attend. Tu nous emmènes où ?`],
+      ["evan", `Parfait, je m'occupe du panier.`],
+      ["evan", `On va où ?`],
     ],
     choices: [
-      { label: "Un parc",  say: `Un parc. Simple, et on rentre à pied.`,
-        goto: "picnic_menu", set: { lieu: "Le parc" } },
-      { label: "La forêt", say: `La forêt. Loin de tout, tant qu'à faire.`,
-        goto: "picnic_menu", set: { lieu: "La forêt" } },
-      { label: "La plage", say: `La plage. Je veux le coucher de soleil.`,
-        goto: "picnic_menu", set: { lieu: "La plage" } },
+      { label: "Dans un parc", say: `Dans un parc.`, goto: "picnic_menu", set: { lieu: "Le parc" } },
+      { label: "En forêt",     say: `En forêt.`,     goto: "picnic_menu", set: { lieu: "La forêt" } },
+      { label: "À la plage",   say: `À la plage.`,   goto: "picnic_menu", set: { lieu: "La plage" } },
     ],
   },
 
@@ -88,20 +71,17 @@ const STORY = {
     bg: "@lieu", weather: "@lieu", teleport: true,
     cast: { bottom: "21%" },
     lines: [
-      ["lauryne", `D'accord. Là, d'accord.`],
-      ["evan", `Content que ça te plaise, parce que je ne sais pas encore la faire revenir.`],
-      ["evan", `Il reste le panier. Il y a quoi dedans ?`],
+      ["lauryne", `Oh.`],
+      ["evan", `Content que ça te plaise.`],
+      ["evan", `Tu veux manger quoi ?`],
     ],
     choices: [
-      { label: "Le classique",
-        say: `Le classique. Pain, fromage, tomates, une bouteille.`,
-        goto: "apres", set: { menu: "Pain, fromage, tomates, une bouteille" } },
-      { label: "Des sushis",
-        say: `Des sushis. Ce n'est pas un pique-nique de carte postale, c'est le mien.`,
-        goto: "apres", set: { menu: "Des sushis, assumés" } },
-      { label: "Un petit-déjeuner, mais à 20 h",
-        say: `Un petit-déjeuner. À 20 h. Viennoiseries au coucher du soleil.`,
-        goto: "apres", set: { menu: "Un petit-déjeuner à 20 h" } },
+      { label: "Un truc simple", say: `Un truc simple.`,
+        goto: "apres", set: { menu: "Pain, fromage, une bouteille" } },
+      { label: "Des sushis", say: `Des sushis.`,
+        goto: "apres", set: { menu: "Des sushis" } },
+      { label: "Un petit-déj, mais le soir", say: `Un petit-déj. Mais le soir.`,
+        goto: "apres", set: { menu: "Un petit-déjeuner, le soir" } },
     ],
   },
 
@@ -110,19 +90,13 @@ const STORY = {
     bg: "@lieu", weather: "@lieu",
     cast: { bottom: "21%" },
     lines: [
-      ["evan", `Dernière chose, et je te laisse tranquille.`],
-      ["evan", `Après, on fait quoi ?`],
+      ["evan", `Dernière question.`],
+      ["evan", `On fait quoi après ?`],
     ],
     choices: [
-      { label: "On marche",
-        say: `On marche. Sans direction précise.`,
-        goto: "fin", set: { apres: "Puis on marche, sans direction" } },
-      { label: "Un dernier verre",
-        say: `Un dernier verre quelque part.`,
-        goto: "fin", set: { apres: "Puis un dernier verre" } },
-      { label: "Rentrer tôt (mensonge)",
-        say: `On rentre tôt. On sait très bien que non.`,
-        goto: "fin", set: { apres: "Puis on rentre tôt — soi-disant" } },
+      { label: "On marche",        say: `On marche.`,        goto: "fin", set: { apres: "Et après, on marche" } },
+      { label: "Un dernier verre", say: `Un dernier verre.`, goto: "fin", set: { apres: "Et après, un dernier verre" } },
+      { label: "On verra",         say: `On verra.`,         goto: "fin", set: { apres: "Et après, on verra" } },
     ],
   },
 
@@ -131,13 +105,13 @@ const STORY = {
     bg: "@lieu", weather: "@lieu", cast: { bottom: "21%" }, end: true,
     title: "@lieu", sub: "@menu", note: "@apres",
     lines: [
-      ["lauryne", `C'est tout ? Je choisis et tu t'occupes du reste ?`],
-      ["evan", `C'est tout. C'était l'idée depuis le début.`],
+      ["evan", `C'est tout ce que j'avais besoin de savoir.`],
+      ["evan", `À ce soir.`],
     ],
   },
 };
 
-/* décor, particules et thème musical associés à chaque lieu */
+/* décor et particules associés à chaque lieu */
 const LIEUX = {
   "Le parc":              { bg: "park",   weather: "petals" },
   "La forêt":             { bg: "forest", weather: "motes"  },
@@ -146,7 +120,7 @@ const LIEUX = {
   "BEY BEEF":             { bg: "resto",  weather: "warmdust" },
 };
 
-/* qui est qui, pour les portraits et les plaques de nom */
+/* portraits et plaques de nom */
 const CAST = {
   evan:    { name: HIM, portrait: "assets/portraits/evan.png" },
   lauryne: { name: HER, portrait: "assets/portraits/lauryne.png" },
