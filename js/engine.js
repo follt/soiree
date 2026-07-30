@@ -360,9 +360,15 @@ function showTicket(node) {
   $("#sig").textContent     = OUTRO.signature;
   $("#ics").textContent     = OUTRO.cta;
   $("#replay").textContent  = OUTRO.replay;
+  /* sans date réelle, un compte à rebours et un fichier calendrier
+     n'ont rien à afficher : on les masque au lieu d'inventer un jour */
+  const daté = !!state.dateIso;
+  $("#countdown").style.display = daté ? "" : "none";
+  $("#ics").style.display       = daté ? "" : "none";
+
   el.outro.classList.add("show");
   el.choices.innerHTML = "";
-  startCountdown();
+  if (daté) startCountdown();
 }
 
 function finish(node) {
@@ -443,6 +449,8 @@ function wakeAudio() {
 }
 
 /* bouton son */
+// sans ça, toucher le bouton son ferait aussi avancer le dialogue
+$("#sound").addEventListener("pointerdown", (e) => e.stopPropagation());
 $("#sound").addEventListener("click", (e) => {
   e.stopPropagation();
   const on = music.ready ? music.toggle() : (wakeAudio(), true);
@@ -480,7 +488,9 @@ function start() {
    Ce geste sert double : il débloque l'audio ET lance la partie.        */
 async function boot() {
   const boot = $("#boot"), bar = $("#boot-bar i");
+  music.init();                       // le fichier se télécharge en parallèle,
   await preload((p) => { bar.style.width = Math.round(p * 100) + "%"; });
+                                      // sans jamais retarder le démarrage
   boot.classList.add("ready");
   const begin = () => {
     boot.removeEventListener("pointerdown", begin);

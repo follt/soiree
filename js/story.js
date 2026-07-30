@@ -6,16 +6,25 @@
 const HER = "Lauryne";
 const HIM = "Evan";
 
-/* =====  LES TROIS DATES  =====================================
-   ↓↓↓  C'EST ICI QUE TU CHANGES LES DATES  ↓↓↓
-   label = ce qu'elle voit sur le bouton et sur le ticket
-   iso   = la vraie date, au format AAAA-MM-JJ (sert au calendrier)
-   heure = heure du rendez-vous, format 24 h
+/* =====  QUAND  ===============================================
+   ↓↓↓  C'EST ICI QUE TU CHANGES LES PROPOSITIONS  ↓↓↓
+
+   label   = le texte du bouton
+   dit     = ce que Lauryne répond après avoir cliqué
+   ticket  = ce qui s'affiche sur le ticket final
+   iso     = LAISSE À null tant que tu ne connais pas le jour.
+             Si tu mets une vraie date ("2026-08-08"), le compte à
+             rebours et le bouton « Ajouter au calendrier »
+             réapparaissent automatiquement.
+   heure   = utile seulement si iso est renseigné
 =============================================================== */
 const DATES = [
-  { label: "Vendredi 7 août",  iso: "2026-08-07", heure: "19:40" },
-  { label: "Samedi 8 août",    iso: "2026-08-08", heure: "19:40" },
-  { label: "Dimanche 9 août",  iso: "2026-08-09", heure: "19:40" },
+  { label: "Plutôt en semaine", dit: `Plutôt en semaine.`,
+    ticket: "Un soir de semaine",   iso: null, heure: "19:40" },
+  { label: "Plutôt le week-end", dit: `Plutôt le week-end.`,
+    ticket: "Un soir de week-end",  iso: null, heure: "19:40" },
+  { label: "Comme tu veux", dit: `Comme tu veux, je m'adapte.`,
+    ticket: "Le jour que tu veux",  iso: null, heure: "19:40" },
 ];
 
 const STORY = {
@@ -35,25 +44,26 @@ const STORY = {
     ],
   },
 
-  /* ================= LA DATE ================= */
+  /* ================= QUAND ================= */
   quand: {
     bg: "street", weather: "fireflies",
     lines: [
       ["evan", `Je me doutais un peu de la réponse.`],
-      ["evan", `Alors dis-moi : tu es libre quand ?`],
+      ["evan", `Je ne te demande pas un jour précis, je m'arrangerai.`],
+      ["evan", `Juste : tu es plutôt dispo quand ?`],
     ],
-    choices: DATES.map((d, i) => ({
+    choices: DATES.map((d) => ({
       label: d.label,
-      say: `${d.label}, ça me va.`,
+      say: d.dit,
       goto: "carrefour",
-      set: { date: d.label, dateIso: d.iso, dateHeure: d.heure },
+      set: { date: d.ticket, dateIso: d.iso, dateHeure: d.heure },
     })),
   },
 
   carrefour: {
     bg: "street", weather: "fireflies",
     lines: [
-      ["evan", `Parfait, je note. @date.`],
+      ["evan", `Noté. Je trouverai le bon soir.`],
       ["evan", `Et tu préfères qu'on fasse quoi ?`],
     ],
     choices: [
@@ -130,7 +140,7 @@ const STORY = {
     title: "@lieu", sub: "@menu", note: "@apres", date: "@date",
     lines: [
       ["evan", `Voilà, j'ai tout ce qu'il me faut.`],
-      ["evan", `Je m'occupe du reste. À très vite.`],
+      ["evan", `Je m'occupe du reste et je te dis le jour très vite.`],
     ],
   },
 };
@@ -152,7 +162,9 @@ const CAST = {
 
 const OUTRO = {
   stamp: "C'EST NOTÉ",
-  signature: `Je passe te prendre à 19 h 40.`,
+  /* sans date précise on ne promet pas d'heure ; si tu remplis un `iso`
+     ci-dessus, remets ici quelque chose comme « Je passe te prendre à 19 h 40. » */
+  signature: `Je te confirme le jour très vite.`,
   cta: "Ajouter au calendrier",
   replay: "Recommencer",
 };

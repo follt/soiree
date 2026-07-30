@@ -411,6 +411,19 @@ html, body {
   animation: hintPulse 1.6s steps(2) infinite;
 }
 #boot.ready #boot-hint { opacity: .8; }
+
+/* crédit de la piste : la licence CC BY l'impose. Discret, en bas,
+   il se lit comme la ligne légale d'un jeu plutôt que comme une gêne. */
+#credit {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--px) * 4 + env(safe-area-inset-bottom, 0px));
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-align: center;
+  color: var(--ink);
+  opacity: .22;
+}
 @keyframes hintPulse { 0%,60% { opacity: .8 } 61%,100% { opacity: .35 } }
 
 /* ---------- DIVERS ---------- */
