@@ -7,25 +7,16 @@ const HER = "Lauryne";
 const HIM = "Evan";
 
 /* =====  QUAND  ===============================================
-   ↓↓↓  C'EST ICI QUE TU CHANGES LES PROPOSITIONS  ↓↓↓
+   Pas de question sur la date : personne ne connaît encore le jour.
+   Evan annonce simplement la période, et c'est ce qui s'affiche
+   sur le ticket final.
 
-   label   = le texte du bouton
-   dit     = ce que Lauryne répond après avoir cliqué
-   ticket  = ce qui s'affiche sur le ticket final
-   iso     = LAISSE À null tant que tu ne connais pas le jour.
-             Si tu mets une vraie date ("2026-08-08"), le compte à
-             rebours et le bouton « Ajouter au calendrier »
-             réapparaissent automatiquement.
-   heure   = utile seulement si iso est renseigné
+   ↓↓↓  CHANGE JUSTE CES DEUX LIGNES  ↓↓↓
+   QUAND        = ce qui apparaît sur le ticket
+   QUAND_PARLE  = comment Evan le dit à voix haute
 =============================================================== */
-const DATES = [
-  { label: "Plutôt en semaine", dit: `Plutôt en semaine.`,
-    ticket: "Un soir de semaine",   iso: null, heure: "19:40" },
-  { label: "Plutôt le week-end", dit: `Plutôt le week-end.`,
-    ticket: "Un soir de week-end",  iso: null, heure: "19:40" },
-  { label: "Comme tu veux", dit: `Comme tu veux, je m'adapte.`,
-    ticket: "Le jour que tu veux",  iso: null, heure: "19:40" },
-];
+const QUAND       = "Au mois d'août";
+const QUAND_PARLE = `C'est prévu pour le mois d'août.`;
 
 const STORY = {
 
@@ -35,36 +26,21 @@ const STORY = {
     lines: [
       ["evan", `Salut toi.`],
       ["evan", `J'ai une petite surprise pour toi.`],
+      ["evan", QUAND_PARLE],
       ["evan", `Rien de compliqué, promis. J'ai juste besoin de ton avis sur deux ou trois trucs.`],
       ["evan", `Ça te dit ?`],
     ],
     choices: [
-      { label: "Oui", say: `Oui.`, goto: "quand" },
-      { label: "Oui", say: `Oui.`, goto: "quand" },
+      { label: "Oui", say: `Oui.`, goto: "carrefour" },
+      { label: "Oui", say: `Oui.`, goto: "carrefour" },
     ],
-  },
-
-  /* ================= QUAND ================= */
-  quand: {
-    bg: "street", weather: "fireflies",
-    lines: [
-      ["evan", `Je me doutais un peu de la réponse.`],
-      ["evan", `Je ne te demande pas un jour précis, je m'arrangerai.`],
-      ["evan", `Juste : tu es plutôt dispo quand ?`],
-    ],
-    choices: DATES.map((d) => ({
-      label: d.label,
-      say: d.dit,
-      goto: "carrefour",
-      set: { date: d.ticket, dateIso: d.iso, dateHeure: d.heure },
-    })),
   },
 
   carrefour: {
     bg: "street", weather: "fireflies",
     lines: [
-      ["evan", `Noté. Je trouverai le bon soir.`],
-      ["evan", `Et tu préfères qu'on fasse quoi ?`],
+      ["evan", `Je me doutais un peu de la réponse.`],
+      ["evan", `Tu préfères qu'on fasse quoi ?`],
     ],
     choices: [
       { label: "Aller au restaurant", say: `Aller au restaurant.`, goto: "resto_choix" },
@@ -137,7 +113,7 @@ const STORY = {
   /* ================= FIN ================= */
   fin: {
     bg: "@lieu", weather: "@lieu", cast: { bottom: "21%" }, end: true,
-    title: "@lieu", sub: "@menu", note: "@apres", date: "@date",
+    title: "@lieu", sub: "@menu", note: "@apres", date: QUAND,
     lines: [
       ["evan", `Voilà, j'ai tout ce qu'il me faut.`],
       ["evan", `Je m'occupe du reste et je te dis le jour très vite.`],
