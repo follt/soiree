@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0810">
+<title>Pour Lauryne</title>
+<meta name="description" content="Une soirée. C'est toi qui choisis.">
+
+<!-- aperçu du lien (iMessage / WhatsApp) — c'est la vraie première image -->
+<meta property="og:title" content="Pour Lauryne">
+<meta property="og:description" content="Une soirée. C'est toi qui choisis.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="stage">
+  <div id="world">
+    <div class="layer" id="bg-a"></div>
+    <div class="layer" id="bg-b"></div>
+
+    <div class="layer" id="weather"></div>
+
+    <div id="cast">
+      <img id="him" class="sprite" src="assets/sprites/him.png" alt="">
+      <img id="her" class="sprite" src="assets/sprites/her.png" alt="">
+    </div>
+
+    <div class="layer" id="vignette"></div>
+
+    <div id="watch"></div>
+    <div class="layer" id="flash"></div>
+    <div id="ring"></div>
+
+    <div id="ui">
+      <div id="nameplate"><span id="who"></span></div>
+      <div id="dialog">
+        <img id="portrait" alt="">
+        <div id="body"><span id="text"></span></div>
+        <i id="next"></i>
+      </div>
+      <div id="choices"></div>
+    </div>
+
+    <div id="dissolve"></div>
+
+    <div id="outro">
+      <div id="ticket">
+        <div id="stamp"></div>
+        <h1 id="o-title"></h1>
+        <h2 id="o-sub"></h2>
+        <div id="o-note"></div>
+        <div id="countdown"></div>
+        <div id="sig"></div>
+      </div>
+      <div id="outro-actions">
+        <button id="ics" class="mini" type="button"></button>
+        <button id="replay" class="mini ghost" type="button"></button>
+      </div>
+    </div>
+
+    <button id="sound" type="button" aria-label="son">♪</button>
+
+    <div id="boot">
+      <div id="boot-inner">
+        <div id="boot-bar"><i></i></div>
+        <div id="boot-hint">appuie pour commencer</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/story.js"></script>
+<script src="js/music.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>

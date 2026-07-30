@@ -1,0 +1,498 @@
+/* =========================================================
+   SOIRÉE — feuille de style
+   Règle générale : rien de fluide. Tout bouge par crans.
+   ========================================================= */
+
+:root {
+  --ink:      #f4e4c1;   /* texte crème */
+  --box:      #241a2e;   /* fond boîte de dialogue */
+  --box-edge: #0e0a14;   /* liseré sombre */
+  --accent:   #ffbf5c;   /* ambre */
+  --shadow:   #120d18;
+  --px: 4px;             /* unité de grille */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #0b0810;
+  font-family: "Pixelify Sans", "VT323", ui-monospace, monospace;
+  -webkit-font-smoothing: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  /* la scène est verrouillée en portrait, centrée sur grand écran */
+  display: grid;
+  place-items: center;
+}
+
+/* ---------- LE MONDE ---------- */
+
+#world {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: calc(100vh * 9 / 16);   /* garde le cadrage portrait */
+  overflow: hidden;
+  background: #0b0810;
+}
+
+.layer { position: absolute; inset: 0; }
+
+#bg-a, #bg-b {
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+  will-change: opacity, transform;
+}
+#bg-b { opacity: 0; }
+
+/* léger flottement du décor — 14 s, imperceptible mais vivant */
+.drift { animation: drift 14s steps(28) infinite alternate; }
+@keyframes drift {
+  from { transform: scale(1.06) translate(-0.6%, -0.4%); }
+  to   { transform: scale(1.06) translate( 0.6%,  0.4%); }
+}
+
+/* vignette + respiration lumineuse */
+#vignette {
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(8,5,12,.55) 100%);
+  animation: breathe 6s steps(12) infinite alternate;
+}
+@keyframes breathe { from { opacity: .75; } to { opacity: 1; } }
+
+/* ---------- PERSONNAGES ---------- */
+
+#cast {
+  position: absolute;
+  left: 50%;
+  bottom: 19%;
+  width: 46%;
+  height: 30%;             /* hauteur définie → les sprites se calent dessus */
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;   /* les deux posés sur la même ligne de sol */
+  gap: 5%;
+  pointer-events: none;
+}
+
+.sprite {
+  image-rendering: pixelated;
+  height: auto;
+  filter: drop-shadow(0 6px 0 rgba(10, 6, 16, .38));
+}
+/* dimensionnés en HAUTEUR, pas en largeur : les deux sprites peuvent venir
+   de générations séparées, leur rapport de taille reste garanti ici.
+   Evan est volontairement un peu plus grand qu'elle.                        */
+#him { height: 100%; width: auto; animation: bob 1.6s steps(2) infinite; }
+#her { height: 93%;  width: auto; animation: bob 1.6s steps(2) infinite .8s; } /* déphasée */
+
+/* respiration en 2 images, comme un vrai sprite */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* entrée des personnages */
+.cast-in { animation: castIn .5s steps(5) both; }
+@keyframes castIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ---------- MÉTÉO / PARTICULES ---------- */
+
+#weather { pointer-events: none; overflow: hidden; }
+.particle {
+  position: absolute;
+  image-rendering: pixelated;
+  will-change: transform, opacity;
+}
+
+/* ---------- BOÎTE DE DIALOGUE ---------- */
+
+#ui {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: var(--px) calc(var(--px) * 3);
+  padding-bottom: calc(var(--px) * 4 + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px) * 2);
+}
+
+/* plaque de nom, onglet posé sur la boîte */
+#nameplate {
+  align-self: flex-start;
+  margin-left: calc(var(--px) * 2);
+  margin-bottom: calc(var(--px) * -1);
+  padding: calc(var(--px) * 1.2) calc(var(--px) * 3);
+  background: var(--accent);
+  color: #1b1220;
+  font-size: clamp(12px, 3.2vw, 15px);
+  letter-spacing: .08em;
+  border: var(--px) solid var(--box-edge);
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity .12s steps(2);
+}
+#nameplate.show { opacity: 1; }
+
+#dialog {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--px) * 3);
+  background: var(--box);
+  border: var(--px) solid var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--box-edge),
+    0 0 0 calc(var(--px) * 2) rgba(244, 228, 193, .18),
+    0 8px 0 var(--shadow);
+  padding: calc(var(--px) * 3) calc(var(--px) * 4) calc(var(--px) * 4);
+  min-height: 4.9em;
+  font-size: clamp(15px, 4.1vw, 21px);
+  line-height: 1.55;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .18s steps(3), transform .18s steps(3);
+}
+#dialog.show { opacity: 1; transform: translateY(0); }
+
+#portrait {
+  flex: none;
+  width: 3.4em;
+  height: 3.4em;
+  object-fit: cover;
+  image-rendering: pixelated;
+  background: #14101c;
+  border: 2px solid rgba(244, 228, 193, .45);
+  display: none;
+}
+#portrait.show { display: block; }
+#body { flex: 1; min-width: 0; }
+
+/* curseur clignotant en fin de réplique */
+#next {
+  position: absolute;
+  right: calc(var(--px) * 3);
+  bottom: calc(var(--px) * 2);
+  width: 0; height: 0;
+  border-left: var(--px) solid transparent;
+  border-right: var(--px) solid transparent;
+  border-top: var(--px) solid var(--accent);
+  opacity: 0;
+  animation: blink 1s steps(1) infinite;
+}
+#next.on { opacity: 1; }
+@keyframes blink { 0%,50% { opacity:1 } 50.01%,100% { opacity:0 } }
+
+/* ---------- MENU DE CHOIX ---------- */
+
+#choices { display: flex; flex-direction: column; gap: var(--px); }
+
+.choice {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: clamp(15px, 4.1vw, 21px);
+  color: var(--ink);
+  background: var(--box);
+  border: var(--px) solid var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--box-edge), 0 6px 0 var(--shadow);
+  padding: calc(var(--px) * 2.5) calc(var(--px) * 3) calc(var(--px) * 2.5) calc(var(--px) * 8);
+  cursor: pointer;
+  opacity: 0;
+  animation: choiceIn .22s steps(4) both;
+}
+@keyframes choiceIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* le petit curseur ▶ du menu, révélé au survol/focus */
+.choice::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--px) * 3);
+  top: 50%;
+  margin-top: calc(var(--px) * -1);
+  width: 0; height: 0;
+  border-top: var(--px) solid transparent;
+  border-bottom: var(--px) solid transparent;
+  border-left: var(--px) solid var(--accent);
+  opacity: 0;
+}
+.choice:hover, .choice:focus-visible { background: #33253f; outline: none; }
+.choice:hover::before, .choice:focus-visible::before { opacity: 1; }
+.choice:active { transform: translateY(3px); box-shadow: 0 0 0 var(--px) var(--box-edge), 0 3px 0 var(--shadow); }
+
+/* ---------- TRANSITION PIXELLISÉE ---------- */
+
+#dissolve {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  pointer-events: none;
+  z-index: 50;
+}
+#dissolve i {
+  background: #0b0810;
+  opacity: 0;
+  transition: opacity .01s;
+}
+
+/* ---------- LA MONTRE ----------
+   Dessinée en CSS : à cette taille un sprite n'apporterait rien,
+   et ça reste net à tous les zooms.                                */
+
+#watch {
+  position: absolute;
+  z-index: 44;
+  left: 50%; bottom: 30%;
+  width: 16px; height: 16px;
+  margin-left: -46px;                 /* au poignet d'Evan, côté gauche */
+  background: #2a2030;
+  border: 3px solid var(--accent);
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px #14101c, 0 0 14px 3px rgba(255,191,92,.55);
+  opacity: 0;
+  transform: scale(.2) translateY(6px);
+  pointer-events: none;
+}
+#watch::before {                      /* cadran */
+  content: "";
+  position: absolute; inset: 2px;
+  background: radial-gradient(circle at 50% 45%, #ffe6ac 0 35%, #c9913f 36% 100%);
+  border-radius: 1px;
+}
+#watch.show { animation: watchOut .34s steps(5) forwards; }
+#watch.ping::after {
+  content: "";
+  position: absolute; inset: -6px;
+  border: 2px solid #fff3d4;
+  border-radius: 5px;
+  animation: watchPing .3s steps(4) 2;
+}
+@keyframes watchOut {
+  from { opacity: 0; transform: scale(.2) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)  translateY(0); }
+}
+@keyframes watchPing {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.9); }
+}
+
+/* ---------- TÉLÉPORTATION ---------- */
+
+#flash {
+  pointer-events: none;
+  z-index: 45;
+  background: #eaf6ff;
+  opacity: 0;
+}
+#flash.on  { animation: flashIn .28s steps(4) forwards; }
+#flash.off { animation: flashOut .34s steps(5) forwards; }
+@keyframes flashIn  { from { opacity: 0 } to { opacity: .92 } }
+@keyframes flashOut { from { opacity: .92 } to { opacity: 0 } }
+
+/* onde qui part du poignet d'Evan */
+#ring {
+  position: absolute;
+  z-index: 46;
+  left: 50%; top: 62%;
+  width: 12px; height: 12px;
+  margin: -6px 0 0 -6px;
+  border: var(--px) solid #bfe9ff;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+#ring.go { animation: ripple .5s steps(9) forwards; }
+@keyframes ripple {
+  from { opacity: 1; transform: scale(1);  border-width: 6px; }
+  to   { opacity: 0; transform: scale(34); border-width: 1px; }
+}
+
+/* ---------- ÉCRAN FINAL ---------- */
+
+#outro {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--px) * 3);
+  padding: calc(var(--px) * 6);
+  text-align: center;
+  background: rgba(11, 8, 16, .72);
+}
+#outro.show { display: flex; }
+
+#ticket {
+  width: 100%;
+  max-width: 340px;
+  background: var(--box);
+  border: var(--px) solid var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--box-edge), 0 10px 0 var(--shadow);
+  padding: calc(var(--px) * 6) calc(var(--px) * 4);
+  color: var(--ink);
+  animation: stampIn .3s steps(4) both;
+}
+@keyframes stampIn {
+  from { opacity: 0; transform: scale(1.3); }
+  to   { opacity: 1; transform: scale(1); }
+}
+#stamp {
+  font-size: clamp(11px, 3vw, 14px);
+  letter-spacing: .22em;
+  color: var(--accent);
+}
+#ticket h1 { font-size: clamp(23px, 6.4vw, 32px); line-height: 1.2; margin: calc(var(--px) * 3) 0 var(--px); }
+#ticket h2 { font-size: clamp(14px, 3.8vw, 18px); font-weight: 400; opacity: .78; }
+#sig { margin-top: calc(var(--px) * 5); font-size: clamp(13px, 3.6vw, 17px); opacity: .9; }
+
+/* ---------- ÉCRAN DE DÉMARRAGE ----------
+   Rien ne commence tant que les décors ne sont pas décodés :
+   sur un réseau lent, une scène à moitié chargée tue l'effet.   */
+
+#boot {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: #0b0810;
+  transition: opacity .4s steps(5);
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+#boot-inner { text-align: center; }
+
+#boot-bar {
+  width: 132px; height: 12px;
+  border: 3px solid var(--ink);
+  box-shadow: 0 0 0 3px var(--box-edge);
+  padding: 2px;
+}
+#boot-bar i {
+  display: block; height: 100%; width: 0%;
+  background: var(--accent);
+  transition: width .25s steps(6);
+}
+#boot-hint {
+  margin-top: calc(var(--px) * 5);
+  font-size: 13px;
+  letter-spacing: .16em;
+  color: var(--ink);
+  opacity: 0;
+  animation: hintPulse 1.6s steps(2) infinite;
+}
+#boot.ready #boot-hint { opacity: .8; }
+@keyframes hintPulse { 0%,60% { opacity: .8 } 61%,100% { opacity: .35 } }
+
+/* ---------- DIVERS ---------- */
+
+#sound {
+  position: absolute;
+  top: calc(var(--px) * 3 + env(safe-area-inset-top, 0px));
+  right: calc(var(--px) * 3);
+  z-index: 60;
+  width: 34px; height: 34px;
+  font: inherit; font-size: 15px; line-height: 1;
+  color: var(--ink);
+  background: rgba(20, 14, 28, .72);
+  border: 2px solid rgba(244, 228, 193, .42);
+  cursor: pointer;
+  transition: opacity .2s steps(2);
+  opacity: .55;
+}
+#sound:hover { opacity: 1; }
+#sound.off { color: #8a7f95; }
+
+/* ---------- BOUTONS DE L'ÉCRAN FINAL ---------- */
+
+#outro-actions {
+  display: flex;
+  gap: var(--px);
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: choiceIn .3s steps(4) .35s both;
+}
+.mini {
+  font: inherit;
+  font-size: clamp(13px, 3.4vw, 16px);
+  color: var(--ink);
+  background: var(--box);
+  border: 3px solid var(--ink);
+  box-shadow: 0 0 0 3px var(--box-edge), 0 5px 0 var(--shadow);
+  padding: calc(var(--px) * 2) calc(var(--px) * 3.5);
+  cursor: pointer;
+}
+.mini:active { transform: translateY(3px); box-shadow: 0 0 0 3px var(--box-edge), 0 2px 0 var(--shadow); }
+.mini.ghost { background: transparent; border-color: rgba(244, 228, 193, .45); color: rgba(244, 228, 193, .72); }
+
+#o-note {
+  margin-top: calc(var(--px) * 2);
+  font-size: clamp(13px, 3.5vw, 16px);
+  opacity: .66;
+}
+#countdown {
+  margin-top: calc(var(--px) * 4);
+  font-size: clamp(11px, 3vw, 13px);
+  letter-spacing: .18em;
+  color: var(--accent);
+  opacity: .85;
+}
+
+/* ---------- GRAND ÉCRAN ----------
+   Sur desktop, la scène devient un petit écran de console posé
+   sur un fond sombre, plutôt qu'une colonne flottante.            */
+
+@media (min-width: 700px) and (min-height: 560px) {
+  #stage {
+    background:
+      radial-gradient(ellipse at 50% 30%, #1b1424 0%, #0b0810 70%);
+  }
+  #world {
+    height: min(94vh, 900px);
+    max-width: min(calc(94vh * 9 / 16), 506px);
+    border: 6px solid #1d1626;
+    border-radius: 6px;
+    box-shadow:
+      0 0 0 3px #2f2440,
+      0 0 0 5px #14101c,
+      0 30px 70px -18px rgba(0, 0, 0, .85),
+      0 0 120px -30px rgba(255, 191, 92, .18);
+  }
+  /* fines scanlines, uniquement sur grand écran */
+  #world::after {
+    content: "";
+    position: absolute; inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom, rgba(0,0,0,.13) 0 1px, transparent 1px 3px);
+    mix-blend-mode: multiply;
+    opacity: .5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift, #vignette, #him, #her { animation: none !important; }
+}
