@@ -217,12 +217,16 @@ const FALLBACK = {
 };
 
 const imgCache = new Map();
-function loadImage(url) {
+function loadImage(url, timeout = 9000) {
   if (imgCache.has(url)) return imgCache.get(url);
   const p = new Promise((res) => {
     const i = new Image();
-    i.onload  = () => res(true);
-    i.onerror = () => { console.warn("asset manquant:", url); res(false); };
+    let done = false;
+    const fin = (ok) => { if (done) return; done = true; res(ok); };
+    i.onload  = () => fin(true);
+    i.onerror = () => { console.warn("asset manquant:", url); fin(false); };
+    // une requête peut caler sans jamais échouer : on ne l'attend pas indéfiniment
+    setTimeout(() => fin(false), timeout);
     i.src = url;
   });
   imgCache.set(url, p);
@@ -233,11 +237,13 @@ async function paintBg(name) {
   if (name === currentBg) return;
   currentBg = name;
   const url = `assets/bg/${name}.png`;
-  await loadImage(url);                       // on n'échange qu'une fois décodé
   $("#world").dataset.scene = name;           // pilote l'accord chromatique des sprites
   const back = state.front === "a" ? el.bgB : el.bgA;
   const front = state.front === "a" ? el.bgA : el.bgB;
+  // la couleur d'ambiance est posée AVANT d'attendre l'image : même sur un
+  // réseau lent, l'écran n'est jamais noir
   back.style.backgroundColor = FALLBACK[name] ?? "#0b0810";
+  await loadImage(url);
   back.style.backgroundImage = `url("${url}")`;
   back.classList.add("drift");
   await wait(20);
@@ -671,17 +677,26 @@ function start() {
    Ce geste sert double : il débloque l'audio ET lance la partie.        */
 async function boot() {
   const boot = $("#boot"), bar = $("#boot-bar i");
-  music.init();                       // le fichier se télécharge en parallèle,
-  await preload((p) => { bar.style.width = Math.round(p * 100) + "%"; });
-                                      // sans jamais retarder le démarrage
-  boot.classList.add("ready");
+
+  let started = false;
   const begin = () => {
-    boot.removeEventListener("pointerdown", begin);
+    if (started) return;
+    started = true;
     boot.classList.add("gone");
     wakeAudio();
     start();
     setTimeout(() => { boot.style.display = "none"; }, 500);
   };
-  boot.addEventListener("pointerdown", begin);
+
+  /* Le geste est accepté IMMÉDIATEMENT, avant même le préchargement.
+     Un fichier qui cale sur un réseau lent ne doit jamais pouvoir
+     empêcher de lancer la partie : les décors se chargent ensuite,
+     et chaque scène a sa couleur d'ambiance en attendant.            */
+  ["pointerdown", "click", "touchstart", "keydown"].forEach(e =>
+    boot.addEventListener(e, begin, { passive: true }));
+  boot.classList.add("ready");
+
+  music.init();
+  preload((p) => { bar.style.width = Math.round(p * 100) + "%"; });
 }
 boot();
