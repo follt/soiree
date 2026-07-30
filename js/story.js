@@ -104,19 +104,29 @@ const STORY = {
       ["evan", `On fait quoi après ?`],
     ],
     choices: [
-      { label: "On marche",        say: `On marche.`,        goto: "fin", set: { apres: "Et après, on marche", duo: "marche" } },
-      { label: "Un dernier verre", say: `Un dernier verre.`, goto: "fin", set: { apres: "Et après, un dernier verre" } },
-      { label: "On verra",         say: `On verra.`,         goto: "fin", set: { apres: "Et après, on verra" } },
+      { label: "On marche",        say: `On marche.`,        goto: "depart", set: { apres: "Et après, on marche" } },
+      { label: "Un dernier verre", say: `Un dernier verre.`, goto: "depart", set: { apres: "Et après, un dernier verre" } },
+      { label: "On verra",         say: `On verra.`,         goto: "depart", set: { apres: "Et après, on verra" } },
     ],
   },
 
-  /* ================= FIN ================= */
-  fin: {
-    bg: "@lieu", weather: "@lieu", cast: { bottom: "21%", duo: "@duo" }, end: true,
-    title: "@lieu", sub: "@menu", note: "@apres", date: QUAND,
+  /* ================= FIN, EN DEUX PLANS ================= */
+
+  /* ils s'éloignent main dans la main, dans la rue où tout a commencé */
+  depart: {
+    bg: "fin_marche", weather: "fireflies", teleport: true,
     lines: [
       ["evan", `Voilà, j'ai tout ce qu'il me faut.`],
       ["evan", `Je m'occupe du reste et je te dis le jour très vite.`],
+    ],
+    next: "fin",
+  },
+
+  /* le baiser, puis le cœur, puis le ticket */
+  fin: {
+    bg: "fin_bisou", weather: "fireflies", end: true,
+    title: "@lieu", sub: "@menu", note: "@apres", date: QUAND,
+    lines: [
       ["evan", `Je t'aime.`],
     ],
   },

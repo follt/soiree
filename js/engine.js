@@ -213,6 +213,7 @@ function placeCast(cfg) {
 const FALLBACK = {
   street: "#3a2436", resto: "#2b1d22", park: "#2f3a25",
   forest: "#1e2b22", beach: "#3b2d33",
+  fin_marche: "#3a2436", fin_bisou: "#3a2436",
 };
 
 const imgCache = new Map();
@@ -248,7 +249,8 @@ async function paintBg(name) {
 /* précharge tout avant que la partie commence */
 async function preload(onProgress) {
   const urls = [
-    ...["street", "resto", "park", "forest", "beach"].map(n => `assets/bg/${n}.png`),
+    ...["street", "resto", "park", "forest", "beach", "fin_marche", "fin_bisou"]
+      .map(n => `assets/bg/${n}.png`),
     "assets/sprites/him.png", "assets/sprites/her.png",
     "assets/portraits/evan.png", "assets/portraits/lauryne.png",
   ];
@@ -352,6 +354,9 @@ async function go(id) {
   }
 
   if (node.end) return finish(node);
+
+  // scène de transition : pas de bouton, on enchaîne tout seul
+  if (node.next) { el.next.classList.remove("on"); return go(node.next); }
 
   el.next.classList.remove("on");
   node.choices.forEach((c, i) => {
