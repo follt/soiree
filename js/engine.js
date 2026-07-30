@@ -175,9 +175,23 @@ let currentBg = null;
 /* placement du couple, réglable scène par scène.
    cast: false        → personne à l'écran (la scène parle toute seule)
    cast: {bottom, width} → ancrage au sol propre à ce décor          */
+/* sprite de groupe : attablés, main dans la main, baiser…
+   Quand il y en a un, il remplace le duo debout.               */
+function showDuo(name) {
+  const d = $("#duo");
+  if (!name) { d.classList.remove("show"); d.removeAttribute("src"); return false; }
+  const url = `assets/sprites/${name}.png`;
+  d.onerror = () => { d.classList.remove("show"); el.cast.style.display = "flex"; };
+  if (d.getAttribute("src") !== url) d.src = url;
+  d.classList.add("show");
+  el.cast.style.display = "none";
+  return true;
+}
+
 function placeCast(cfg) {
-  // au bistro la table occupe le premier plan : personne ne se tient debout dessus
-  if (currentBg === "resto") { el.cast.style.display = "none"; return; }
+  // au bistro ils sont attablés : c'est une règle de décor, pas de scénario
+  const wanted = resolve(cfg?.duo ?? null) || (currentBg === "resto" ? "attables" : null);
+  if (showDuo(wanted)) return;
   if (cfg === false) { el.cast.style.display = "none"; return; }
   el.cast.style.display = "flex";
   // sans réglage explicite, on rend la main à la feuille de style
@@ -210,6 +224,7 @@ async function paintBg(name) {
   currentBg = name;
   const url = `assets/bg/${name}.png`;
   await loadImage(url);                       // on n'échange qu'une fois décodé
+  $("#world").dataset.scene = name;           // pilote l'accord chromatique des sprites
   const back = state.front === "a" ? el.bgB : el.bgA;
   const front = state.front === "a" ? el.bgA : el.bgB;
   back.style.backgroundColor = FALLBACK[name] ?? "#0b0810";
@@ -348,6 +363,160 @@ async function go(id) {
 }
 
 /* ---------------------------------------------------------
+   LE CŒUR DE FIN
+   Des pixels s'échappent des deux personnages, montent, s'assemblent
+   en cœur, battent deux fois, puis éclatent — et le ticket sort
+   de cet éclat. Tout est dessiné en carrés alignés sur la grille.
+--------------------------------------------------------- */
+
+const HEART = [
+  "..###...###..",
+  ".#####.#####.",
+  "#############",
+  "#############",
+  "#############",
+  ".###########.",
+  "..#########..",
+  "...#######...",
+  "....#####....",
+  ".....###.....",
+  "......#......",
+];
+
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+
+function heartFinale() {
+  return new Promise((done) => {
+    const cv = $("#fx"), g = cv.getContext("2d");
+    const world = $("#world");
+    const W = world.clientWidth, H = world.clientHeight;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.imageSmoothingEnabled = false;
+
+    /* taille d'un pixel du cœur, arrondie pour rester sur la grille */
+    const px = Math.max(4, Math.round(W / 34));
+    const cols = HEART[0].length, rows = HEART.length;
+    const hx = Math.round((W - cols * px) / 2);
+    const hy = Math.round(H * 0.30);
+
+    /* d'où partent les pixels : les deux sprites, sinon le centre bas */
+    const wr = world.getBoundingClientRect();
+    const sources = [];
+    for (const sel of ["#him", "#her"]) {
+      const s = $(sel);
+      if (s && el.cast.style.display !== "none" && s.getBoundingClientRect().width) {
+        const r = s.getBoundingClientRect();
+        sources.push({ x: r.left - wr.left + r.width / 2, y: r.top - wr.top + r.height * 0.4 });
+      }
+    }
+    if (!sources.length) sources.push({ x: W / 2, y: H * 0.62 });
+
+    const parts = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (HEART[r][c] !== "#") continue;
+        const src = sources[(r + c) % sources.length];
+        const tx = hx + c * px, ty = hy + r * px;
+        parts.push({
+          tx, ty,
+          sx: src.x + (Math.random() - 0.5) * 28,
+          sy: src.y + (Math.random() - 0.5) * 28,
+          delay: 90 + Math.hypot(tx - src.x, ty - src.y) * 0.9 + Math.random() * 160,
+          // teinte : bord plus clair, cœur plus soutenu
+          light: r < 3 || c < 2 || c > cols - 3,
+          vx: (Math.random() - 0.5) * 2.4,
+          vy: -1.2 - Math.random() * 1.8,
+        });
+      }
+    }
+
+    showDuo("bisou");          // ils s'embrassent pendant que le cœur se forme
+
+    const GATHER = 1050, BEAT = 1250, BURST = 750;
+    const TOTAL = GATHER + BEAT + BURST;
+    const t0 = performance.now();
+    cv.classList.add("on");
+
+    // petite montée sonore pendant l'assemblage
+    [0, 130, 260, 390, 520, 660].forEach((d, i) =>
+      setTimeout(() => audio.blip(520 + i * 110, 0.09, "square", 0.10), d));
+
+    let ticketShown = false;
+    function frame(now) {
+      const t = now - t0;
+      g.clearRect(0, 0, W, H);
+
+      /* --- phase 1 : les pixels convergent --- */
+      if (t < GATHER + BEAT) {
+        const beatT = Math.max(0, t - GATHER);
+        // deux battements, comme un cœur
+        let scale = 1;
+        if (beatT > 0) {
+          const b = beatT / BEAT;
+          scale = 1 + 0.10 * Math.exp(-Math.pow((b - 0.18) * 7, 2))
+                    + 0.14 * Math.exp(-Math.pow((b - 0.55) * 7, 2));
+        }
+        const cx = hx + cols * px / 2, cy = hy + rows * px / 2;
+
+        // halo qui grandit avec le battement
+        if (beatT > 0) {
+          const glow = (scale - 1) * 7;
+          g.globalAlpha = Math.min(0.5, glow);
+          g.fillStyle = "#ff8fa0";
+          g.beginPath();
+          g.arc(cx, cy, cols * px * 0.62 * scale, 0, Math.PI * 2);
+          g.fill();
+          g.globalAlpha = 1;
+        }
+
+        for (const p of parts) {
+          const k = Math.max(0, Math.min(1, (t - p.delay) / 620));
+          if (k <= 0) continue;
+          const e = easeOut(k);
+          let x = p.sx + (p.tx - p.sx) * e;
+          let y = p.sy + (p.ty - p.sy) * e - Math.sin(e * Math.PI) * 26; // petite cloche
+          if (beatT > 0) {
+            x = cx + (p.tx - cx) * scale;
+            y = cy + (p.ty - cy) * scale;
+          }
+          g.globalAlpha = k < 1 ? 0.55 + k * 0.45 : 1;
+          g.fillStyle = p.light ? "#ff9aa8" : "#e8556d";
+          g.fillRect(Math.round(x), Math.round(y), px, px);
+        }
+        g.globalAlpha = 1;
+      }
+
+      /* --- phase 2 : le cœur éclate --- */
+      else {
+        const b = (t - GATHER - BEAT) / BURST;
+        const cx = hx + cols * px / 2, cy = hy + rows * px / 2;
+        for (const p of parts) {
+          const d = b * 150;
+          const x = p.tx + p.vx * d + (p.tx - cx) * b * 1.5;
+          const y = p.ty + p.vy * d + (p.ty - cy) * b * 1.5 + b * b * 90;
+          g.globalAlpha = Math.max(0, 1 - b * 1.25);
+          g.fillStyle = p.light ? "#ffd0d7" : "#ff8fa0";
+          g.fillRect(Math.round(x), Math.round(y), px, px);
+        }
+        g.globalAlpha = 1;
+        if (!ticketShown && b > 0.25) { ticketShown = true; done(); }
+      }
+
+      if (t < TOTAL) requestAnimationFrame(frame);
+      else { cv.classList.remove("on"); g.clearRect(0, 0, W, H); if (!ticketShown) done(); }
+    }
+    requestAnimationFrame(frame);
+
+    // battements audibles, calés sur les deux pulsations
+    setTimeout(() => audio.blip(150, 0.16, "triangle", 0.30), GATHER + BEAT * 0.18);
+    setTimeout(() => audio.blip(140, 0.20, "triangle", 0.34), GATHER + BEAT * 0.55);
+  });
+}
+
+/* ---------------------------------------------------------
    ÉCRAN FINAL
 --------------------------------------------------------- */
 function showTicket(node) {
@@ -371,7 +540,9 @@ function showTicket(node) {
   if (daté) startCountdown();
 }
 
-function finish(node) {
+async function finish(node) {
+  $("#ui").style.display = "none";     // on libère l'écran avant l'animation
+  await heartFinale();                 // le ticket sort de l'éclat du cœur
   audio.confirm();
   showTicket(node);
   try {

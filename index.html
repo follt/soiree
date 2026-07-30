@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 
@@ -29,13 +29,15 @@
     <div class="layer" id="weather"></div>
 
     <div id="cast">
-      <img id="him" class="sprite" src="assets/sprites/him.png" alt="">
-      <img id="her" class="sprite" src="assets/sprites/her.png" alt="">
+      <div class="fig"><span class="ground"></span><img id="him" class="sprite" src="assets/sprites/him.png" alt=""></div>
+      <div class="fig"><span class="ground"></span><img id="her" class="sprite" src="assets/sprites/her.png" alt=""></div>
     </div>
+    <img id="duo" alt="">   <!-- sprite de groupe : attablés, main dans la main… -->
 
     <div class="layer" id="vignette"></div>
 
     <div id="watch"></div>
+    <canvas id="fx"></canvas>
     <div class="layer" id="flash"></div>
     <div id="ring"></div>
 
@@ -79,8 +81,8 @@
   </div>
 </div>
 
-<script src="js/story.js?v=13"></script>
-<script src="js/music.js?v=13"></script>
-<script src="js/engine.js?v=13"></script>
+<script src="js/story.js?v=15"></script>
+<script src="js/music.js?v=15"></script>
+<script src="js/engine.js?v=15"></script>
 </body>
 </html>

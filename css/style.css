@@ -86,16 +86,69 @@ html, body {
   pointer-events: none;
 }
 
+.fig {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ombre de contact au sol : c'est elle qui pose les personnages dans le
+   décor. Une ombre portée décalée les faisait flotter.                  */
+.ground {
+  position: absolute;
+  left: 50%; bottom: -1%;
+  width: 88%; height: 9%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center,
+              rgba(6, 4, 10, .55) 0%, rgba(6, 4, 10, .28) 45%, rgba(6, 4, 10, 0) 72%);
+  pointer-events: none;
+}
+
 .sprite {
   image-rendering: pixelated;
-  height: auto;
-  filter: drop-shadow(0 6px 0 rgba(10, 6, 16, .38));
+  position: relative;
 }
 /* dimensionnés en HAUTEUR, pas en largeur : les deux sprites peuvent venir
    de générations séparées, leur rapport de taille reste garanti ici.
    Evan est volontairement un peu plus grand qu'elle.                        */
 #him { height: 100%; width: auto; animation: bob 1.6s steps(2) infinite; }
 #her { height: 93%;  width: auto; animation: bob 1.6s steps(2) infinite .8s; } /* déphasée */
+
+/* sprite de groupe (attablés, main dans la main, baiser) : remplace le duo */
+#duo {
+  position: absolute;
+  left: 50%;
+  bottom: 19%;
+  height: 34%;
+  width: auto;
+  transform: translateX(-50%);
+  image-rendering: pixelated;
+  display: none;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(6, 4, 10, .5));
+}
+#duo.show { display: block; animation: castIn .45s steps(5) both; }
+
+/* ---- intégration au décor ----
+   Chaque monde a sa lumière. Sans ça les sprites « collent » dessus
+   au lieu d'y être. Réglage discret : on ne repeint pas, on accorde.  */
+#cast, #duo { transition: filter .5s steps(4); }
+#world[data-scene="street"] #cast, #world[data-scene="street"] #duo {
+  filter: brightness(.93) saturate(.95) hue-rotate(-4deg) drop-shadow(0 3px 5px rgba(6,4,10,.45));
+}
+#world[data-scene="resto"] #cast, #world[data-scene="resto"] #duo {
+  filter: brightness(.88) saturate(.92) sepia(.10) drop-shadow(0 3px 5px rgba(6,4,10,.55));
+}
+#world[data-scene="park"] #cast, #world[data-scene="park"] #duo {
+  filter: brightness(1.02) saturate(1.02) hue-rotate(3deg) drop-shadow(0 3px 5px rgba(6,4,10,.4));
+}
+#world[data-scene="forest"] #cast, #world[data-scene="forest"] #duo {
+  filter: brightness(.86) saturate(.9) hue-rotate(8deg) drop-shadow(0 3px 5px rgba(4,10,6,.5));
+}
+#world[data-scene="beach"] #cast, #world[data-scene="beach"] #duo {
+  filter: brightness(.97) saturate(1.05) sepia(.12) drop-shadow(0 3px 5px rgba(10,5,4,.45));
+}
 
 /* respiration en 2 images, comme un vrai sprite */
 @keyframes bob {
@@ -255,6 +308,19 @@ html, body {
   opacity: 0;
   transition: opacity .01s;
 }
+
+/* ---------- CALQUE D'EFFETS (le cœur de fin) ---------- */
+
+#fx {
+  position: absolute;
+  inset: 0;
+  z-index: 43;
+  pointer-events: none;
+  image-rendering: pixelated;
+  opacity: 0;
+  transition: opacity .2s steps(3);
+}
+#fx.on { opacity: 1; }
 
 /* ---------- LA MONTRE ----------
    Dessinée en CSS : à cette taille un sprite n'apporterait rien,

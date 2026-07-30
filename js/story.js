@@ -50,7 +50,7 @@ const STORY = {
 
   /* ================= RESTAURANT ================= */
   resto_choix: {
-    bg: "resto", weather: "warmdust", cast: false, teleport: true,
+    bg: "resto", weather: "warmdust", teleport: true,
     lines: [
       ["evan", `Bonne idée. J'ai deux adresses en tête.`],
       ["evan", `Laquelle te tente le plus ?`],
@@ -104,7 +104,7 @@ const STORY = {
       ["evan", `On fait quoi après ?`],
     ],
     choices: [
-      { label: "On marche",        say: `On marche.`,        goto: "fin", set: { apres: "Et après, on marche" } },
+      { label: "On marche",        say: `On marche.`,        goto: "fin", set: { apres: "Et après, on marche", duo: "marche" } },
       { label: "Un dernier verre", say: `Un dernier verre.`, goto: "fin", set: { apres: "Et après, un dernier verre" } },
       { label: "On verra",         say: `On verra.`,         goto: "fin", set: { apres: "Et après, on verra" } },
     ],
@@ -112,7 +112,7 @@ const STORY = {
 
   /* ================= FIN ================= */
   fin: {
-    bg: "@lieu", weather: "@lieu", cast: { bottom: "21%" }, end: true,
+    bg: "@lieu", weather: "@lieu", cast: { bottom: "21%", duo: "@duo" }, end: true,
     title: "@lieu", sub: "@menu", note: "@apres", date: QUAND,
     lines: [
       ["evan", `Voilà, j'ai tout ce qu'il me faut.`],
