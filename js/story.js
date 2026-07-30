@@ -117,6 +117,7 @@ const STORY = {
     lines: [
       ["evan", `Voilà, j'ai tout ce qu'il me faut.`],
       ["evan", `Je m'occupe du reste et je te dis le jour très vite.`],
+      ["evan", `Je t'aime.`],
     ],
   },
 };
