@@ -104,9 +104,10 @@ const STORY = {
       ["evan", `On fait quoi après ?`],
     ],
     choices: [
-      { label: "On marche",        say: `On marche.`,        goto: "depart", set: { apres: "Et après, on marche" } },
-      { label: "Un dernier verre", say: `Un dernier verre.`, goto: "depart", set: { apres: "Et après, un dernier verre" } },
-      { label: "On verra",         say: `On verra.`,         goto: "depart", set: { apres: "Et après, on verra" } },
+      { label: "On se balade",       say: `On se balade.`,
+        goto: "depart", set: { apres: "Et après, on se balade" } },
+      { label: "On regarde un film", say: `On rentre regarder un film.`,
+        goto: "depart", set: { apres: "Et après, un film" } },
     ],
   },
 
