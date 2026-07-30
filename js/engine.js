@@ -188,9 +188,18 @@ function showDuo(name) {
   return true;
 }
 
+/* Décors dont les personnages font déjà partie de l'image.
+   Le modèle y a dessiné lui-même les ombres au sol et la lumière :
+   poser un sprite par-dessus afficherait un deuxième couple.        */
+const BAKED = new Set(["street", "resto", "park", "forest", "beach", "fin_marche", "fin_bisou"]);
+
 function placeCast(cfg) {
-  // au bistro ils sont attablés : c'est une règle de décor, pas de scénario
-  const wanted = resolve(cfg?.duo ?? null) || (currentBg === "resto" ? "attables" : null);
+  if (BAKED.has(currentBg)) {              // le couple est déjà dans le décor
+    el.cast.style.display = "none";
+    showDuo(null);
+    return;
+  }
+  const wanted = resolve(cfg?.duo ?? null);
   if (showDuo(wanted)) return;
   if (cfg === false) { el.cast.style.display = "none"; return; }
   el.cast.style.display = "flex";
@@ -432,8 +441,6 @@ function heartFinale() {
         });
       }
     }
-
-    showDuo("bisou");          // ils s'embrassent pendant que le cœur se forme
 
     const GATHER = 1050, BEAT = 1250, BURST = 750;
     const TOTAL = GATHER + BEAT + BURST;
