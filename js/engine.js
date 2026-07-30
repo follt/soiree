@@ -59,11 +59,36 @@ const GRID_X = 12, GRID_Y = 21;
 const cells = [...el.dissolve.querySelectorAll("i")];
 const shuffled = () => cells.map(c => [Math.random(), c]).sort((a, b) => a[0] - b[0]).map(p => p[1]);
 
+/*  Une seule boucle d'animation, pas 252 minuteurs.
+    Les minuteurs individuels se faisaient regrouper et réordonner par les
+    navigateurs intégrés (Instagram, Messenger…) : des carrés de la phase
+    précédente se rallumaient après coup et restaient bloqués à l'écran.
+    Ici l'état est recalculé à chaque image et imposé à la fin.          */
+let dissolveRAF = null;
 function dissolve(dir, ms = 340) {
   return new Promise(res => {
-    const order = shuffled(), step = ms / order.length;
-    order.forEach((c, i) => setTimeout(() => { c.style.opacity = dir === "in" ? 1 : 0; }, i * step));
-    setTimeout(res, ms + 40);
+    cancelAnimationFrame(dissolveRAF);
+    const order = shuffled();
+    const cible = dir === "in" ? "1" : "0";
+    const reste = dir === "in" ? "0" : "1";
+    const t0 = performance.now();
+    let fini = false;
+    const finir = () => {
+      if (fini) return; fini = true;
+      for (const c of cells) c.style.opacity = cible;   // état final garanti
+      res();
+    };
+    const frame = () => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      const n = Math.floor(k * order.length);
+      for (let i = 0; i < order.length; i++)
+        order[i].style.opacity = i < n ? cible : reste;
+      if (k < 1) dissolveRAF = requestAnimationFrame(frame);
+      else finir();
+    };
+    dissolveRAF = requestAnimationFrame(frame);
+    // filet de sécurité si la boucle d'animation est suspendue (onglet en arrière-plan)
+    setTimeout(finir, ms + 900);
   });
 }
 
